@@ -55,3 +55,52 @@ def get_activation(name) -> Callable:
             return getattr(F, name)
         except AttributeError:
             raise ValueError(f"Unknown activation function: {name}")
+        
+
+"""
+Full projection Function
+"""
+def ndc2pixel(v, S):
+    return ((v + 1.0) * S - 1.0) * 0.5
+
+
+def fullproj(point_3d, full_proj_matrix, W, H):
+    """
+    Project the 3D point cloud into pixel space
+    Using the 3DGS projection methods: World_coord --> Camera_coord 
+    --> NDC_coord--> Pixel_coord 
+    
+    """
+    hom = torch.matmul(point_3d, full_proj_matrix)
+    weight = 1.0/(hom[:,3] + 0.000001)
+    return ndc2pixel(hom[:,0]*weight, W), ndc2pixel(hom[:,1]*weight, H)
+
+
+def project_and_filter(points_3d, P, W, H):
+     
+    N = points_3d.shape[0]
+    # Construct homogeneous coordinates [X, Y, Z, 1]
+    ones = torch.ones((N, 1), dtype=points_3d.dtype, device=points_3d.device)
+    points_homogeneous = torch.cat([points_3d, ones], dim=1)  # [N, 4]
+    
+    # Project 3D points into pixel space 
+    x,y = fullproj(points_homogeneous, P, 640, 480)
+    
+    # Keep only the projected pixel that is inside the pixel space ：x ∈ (0, 640), y ∈ (0, 480)
+    mask = (x > 0) & (x < W) & (y > 0) & (y < H)
+    
+    x_filtered = x[mask]
+    y_filtered = y[mask]
+    points_3d_filtered = points_3d[mask]  # [M, 3]
+    
+    xy = torch.cat([x_filtered.unsqueeze(1), 
+                        y_filtered.unsqueeze(1)], dim=1) 
+    
+    return mask, xy, points_3d_filtered 
+    
+    
+    
+
+
+
+     

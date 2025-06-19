@@ -73,6 +73,7 @@ class LoFTREncoderLayer(nn.Module):
             x_mask (torch.Tensor): [N, L] (optional)
             source_mask (torch.Tensor): [N, S] (optional)
         """
+
         x, source = self.adapdim(x)[None], self.adapdim(source)[None]
         bs = x.size(0)
         # norm 

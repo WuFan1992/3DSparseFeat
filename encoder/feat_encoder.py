@@ -63,7 +63,7 @@ class FeatEncoder(nn.Module):
         output: dim = 256
         header = 4
         """
-        self.self_atten = LoFTREncoderLayer(config.fusion_channles, config.post_embed_channels, config.transformer_header_num)
+        self.self_atten = LoFTREncoderLayer(config.post_embed_channels, config.post_embed_channels, config.transformer_header_num)
         
  
         
@@ -77,7 +77,7 @@ class FeatEncoder(nn.Module):
         self.estim_feature = MLP(config.post_embed_channels, 64,1024, 4, "relu")
         
     
-    def forward(self, kp_feature: torch.Tensor, pos: torch.Tensor, cam_intr: torch.Tensor, cam_extr: torch.Tensor) ->float:
+    def forward(self, pos: torch.Tensor, cam_intr: torch.Tensor, cam_extr: torch.Tensor):
         
         
         # position embedding
@@ -86,11 +86,12 @@ class FeatEncoder(nn.Module):
         #post processing position embedding dim from 60 to 256
         pos_embed = self.post_embed(pos_embed)
 
+
         
         # prepare camera embedding input
-        cam_data = torch.cat([cam_intr, cam_extr], dim=1)
+        cam_data = torch.cat([cam_intr, cam_extr], dim=1).float().cuda()
         cam_data = self.camera_embed(cam_data)
-        
+
         # self attention condition with 
         token = self.self_atten(pos_embed, pos_embed, cam_data)
         
