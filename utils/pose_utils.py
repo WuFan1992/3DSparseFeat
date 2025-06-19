@@ -131,7 +131,6 @@ def project_and_filter(points_3d,P, W, H):
     
     Input:  
          points_3d: [N, 3] Tensor
-         points_feat: [N,C] Tensor: the feature associated with each 3D points 
          P: [3, 4] Projection Matrix Tensor
 
     Return :

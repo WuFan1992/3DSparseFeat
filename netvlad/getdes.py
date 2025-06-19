@@ -7,10 +7,12 @@ import numpy as np
 import os
 from PIL import Image
 
-from .netvlad import NetVLAD
+
 
 import sys
 sys.path.insert(0, 'C:/Users/fwu/Documents/PhD_FanWU/MyCode/3DSparsefeat')
+
+from netvlad.netvlad import NetVLAD
 
 from scene import Scene
 from tqdm import tqdm
@@ -19,7 +21,7 @@ from arguments import ModelParams
 from utils.general_utils import image_process
 
 ###  Command #############
-# python getdes.py -s ../datasets/wholehead/ -m ../output/ --iteration 15000 
+# python getdes.py -s ../../GSplatLoc/gsplatloc-main/datasets/wholehead/ -m ../../GSplatLoc/gsplatloc-main/output_wholescene/img_2000_head
 ########################################################################
 
 
@@ -31,16 +33,16 @@ def getNetVladDesc(views, model):   # --->  global descriptor [N, 128] and image
     
     for _, view in enumerate(tqdm(views, desc="Rendering progress")):
         #Get the image
-        img_name = view.seq_num + '/' + view.image_name  # ex: seq-1/frame-000455
+        img_name = view.image_name  # ex: seq-1/frame-000455
         try:
             query_img = Image.open(view.image_path) 
         except:
             print(f"Error opening image: {view.image_path}")
             continue
         original_image = image_process(query_img)
-        image = original_image.cuda()
+        image = original_image.cuda() # [3,480,640]
         
-        output = model(image)["global_descriptor"]
+        output = model(image[None])["global_descriptor"]
         global_desc.append(output.detach().cpu())
         imgs_name.append(img_name)
         
@@ -56,9 +58,11 @@ model = NetVLAD(conf).eval().to(device)
 
 
 #Prepare the dataset 
-parser = ArgumentParser(description="Testing script parameters")
+parser = ArgumentParser(description="Netvlad parameters")
 model_params = ModelParams(parser, sentinel=True)
 args = parser.parse_args(sys.argv[1:])
+args.eval = True
+args.data_device = "cuda"
 scene = Scene(model_params.extract(args), load_iteration=args.iteration, shuffle=False)
 
 global_desc, imgs_name = getNetVladDesc(scene.getTrainCameras(), model)
